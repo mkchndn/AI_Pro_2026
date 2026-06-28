@@ -12,7 +12,8 @@ from langchain_core.output_parsers import StrOutputParser
 # ==========================================
 # 1. INITIALIZATION & CORE CONFIG
 # ==========================================
-TEMP_DIR = "./uploaded_txt_files"
+# hello testing
+TEMP_DIR = "./uploaded_txt_files123"
 DB_DIR = "./chroma_db_streamlit"
 LLM_MODEL = "llama3"
 EMBED_MODEL = "nomic-embed-text" 
