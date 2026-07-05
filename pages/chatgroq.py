@@ -26,6 +26,8 @@ with st.sidebar:
     st.page_link("pages/chatbot.py", label="🌐 GEMINI CLOUD CHAT", use_container_width=True)
     st.page_link("pages/chatgroq.py", label="🌐 GROQ CLOUD CHAT", use_container_width=True)
     st.page_link("pages/ollamarag.py", label="🌐 OLAMMA RAG CHAT", use_container_width=True)
+    st.page_link("pages/vector1.py", label="🌐 Vector RAG CHAT", use_container_width=True)
+    st.page_link("pages/vector_resume.py", label="🌐 Vector RESUME CHAT", use_container_width=True)
         
     st.markdown("---")
     st.markdown("### 📥 DOWNLOAD CV SUITE")

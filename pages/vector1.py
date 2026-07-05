@@ -1,7 +1,10 @@
 import os
 import streamlit as st
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from langchain_core.documents import Document
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import FAISS
 
 # 1. CRITICAL: must be the absolute first execution command on child pages
 st.set_page_config(page_title="Gemini Chatbot", page_icon="💬", layout="centered")
@@ -15,6 +18,24 @@ st.markdown("""
 
 PDF_RESUME = "MITHILESH_15Years_Exp_Dotnet_SQL_AI.pdf"
 WORD_RESUME = "MITHILESH_15Years_Exp_Dotnet_SQL_AI.docx"
+
+# ==========================================
+# FIXED: VECTOR STORE INITIALIZATION (RUNS ONCE)
+# ==========================================
+if "vector_db" not in st.session_state:
+    with st.spinner("Initializing local background index..."):
+        # Factual resume strings matching your engineering background
+        texts = [
+            "Mithilesh is an expert IT professional with 15 years of experience specializing in .NET architectures, SQL Server, and AI solutions.",
+            "Technical Skillset: C#, ASP.NET MVC, .NET Core, Web API, SQL Server, query optimization, and LLM orchestration applications.",
+            "Professional Background: Proven track record of managing enterprise backend migrations, database architectures, and deploying cloud-native web apps.",
+            "Contact & Location Information: Mithilesh resides in Ghaziabad, UP, India. Mobile: +91 9716372870. Email: mithilesh25@gmail.com."
+        ]
+        docs = [Document(page_content=t) for t in texts]
+        
+        # Free, local embedding model that doesn't conflict with your Google API configuration
+        model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+        st.session_state.vector_db = FAISS.from_documents(docs, model)
 
 # ==========================================
 # 2. EXACT MATCH INTERACTIVE HUD SIDEBAR ENVIRONMENT
@@ -58,22 +79,16 @@ with col_h:
     st.page_link("app.py", label="🌐 Dashboard", use_container_width=True)
 with col_s:
     st.page_link("pages/chatbot.py", label="🌐 GEMINI CLOUD CHAT", use_container_width=True)
-
 with col_g:
     st.page_link("pages/chatgroq.py", label="🌐 GROQ CLOUD CHAT", use_container_width=True)
-
-    with col_o:
-     st.page_link("pages/ollamarag.py", label="🌐 OLAMMA RAG CHAT", use_container_width=True)
+with col_o:
+    st.page_link("pages/ollamarag.py", label="🌐 OLAMMA RAG CHAT", use_container_width=True)
 
 st.markdown("---")
 
 # ==========================================
 # 3. INTERACTIVE CHAT ENGINE ENVIRONMENT
 # ==========================================
-# st.title("💬 GEMINI CLOUD CHAT")
-# st.write("Start chatting! The AI remembers your previous messages.")
-# st.markdown("---")
-
 with st.expander("🔑 SECURE KEY MANAGER", expanded=False):
     google_api_key = st.text_input(
         "Enter Google API Key:", 
@@ -108,25 +123,44 @@ if user_input := st.chat_input("Type your message here..."):
     if not google_api_key:
         st.error("Operation Denied: Secure Key token array is missing.")
     else:
+        # Enforce key assignment globally to ensure API calls don't drop
+        os.environ["GOOGLE_API_KEY"] = google_api_key
+        
         with st.chat_message("user"):
             st.markdown(user_input)
         st.session_state.chat_history.append({"role": "user", "content": user_input})
 
         with st.chat_message("assistant"):
-            with st.spinner("Processing tokens..."):
+            with st.spinner("Processing tokens with RAG context..."):
                 try:
+                    # Initialize LLM Architecture
                     llm = ChatGoogleGenerativeAI(
                         model=selected_model, 
                         temperature=selected_temp,
                         api_key=google_api_key
                     )
-                    langchain_messages = []
+                    
+                    # FIXED STEP: Retrieve context and query index list correctly [0]
+                    search_results = st.session_state.vector_db.similarity_search(user_input, k=1)
+                    context_chunk = search_results[0].page_content if search_results else ""
+                    
+                    # Format system background framing prompt
+                    system_prompt = (
+                        "You are an intelligent portfolio assistant for Mithilesh. "
+                        "Answer queries accurately using this database context. "
+                        f"Context: {context_chunk}"
+                    )
+                    
+                    # Construct clean historical conversation array
+                    langchain_messages = [SystemMessage(content=system_prompt)]
+                    
                     for msg in st.session_state.chat_history:
                         if msg["role"] == "user":
                             langchain_messages.append(HumanMessage(content=msg["content"]))
                         else:
                             langchain_messages.append(AIMessage(content=msg["content"]))
                     
+                    # Execute model generation seamlessly
                     res = llm.invoke(langchain_messages)
                     st.markdown(res.content)
                     st.session_state.chat_history.append({"role": "assistant", "content": res.content})
