@@ -1,4 +1,5 @@
 import streamlit as st
+import math
 from langchain_community.tools import tool
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_groq import ChatGroq
@@ -38,7 +39,7 @@ with st.sidebar:
             ["gemini-2.5-flash", "gemini-1.5-pro", "gemini-1.5-flash"],
         )
         api_key = gemini_key
-        key_name = "GEMINI_API_KEY"
+        key_name = "GOOGLE_API_KEY"
     else:
         model_name = st.selectbox(
             "Select Model:",
@@ -53,7 +54,7 @@ with st.sidebar:
 
     # Status Indicator for Key
     if api_key:
-        st.success(f" loaded from `st.secrets`!", icon="✅")
+        st.success(f" `{key_name}` loaded from `st.secrets`!", icon="✅")
     else:
         st.error(f" `{key_name}` missing in `.streamlit/secrets.toml`!")
 
@@ -61,11 +62,13 @@ with st.sidebar:
     st.markdown(
         "**Available Tools:**\n"
         "- Character Length Counter\n"
-        "- Multiplication Calculator"
+        "- Full Calculator Suite (Add, Subtract, Multiply, Divide, Power, Square Root)"
     )
 
 
-# Define Custom Tools
+# ==========================================
+# DEFINE CUSTOM TOOLS (COMPLETE CALCULATOR SUITE)
+# ==========================================
 @tool
 def get_word_length(word: str) -> int:
     """Returns the exact length of a word in characters."""
@@ -73,12 +76,55 @@ def get_word_length(word: str) -> int:
 
 
 @tool
+def calculate_add(a: float, b: float) -> float:
+    """Adds two numbers together (a + b). Use this for any addition or sum operations."""
+    return a + b
+
+
+@tool
+def calculate_subtract(a: float, b: float) -> float:
+    """Subtracts the second number from the first number (a - b). Use this for differences."""
+    return a - b
+
+
+@tool
 def calculate_multiply(a: float, b: float) -> float:
-    """Multiplies two numbers together."""
+    """Multiplies two numbers together (a * b). Use this for products or multiplication."""
     return a * b
 
 
-tools = [get_word_length, calculate_multiply]
+@tool
+def calculate_divide(a: float, b: float) -> str:
+    """Divides the first number by the second number (a / b). Handles division safety."""
+    if b == 0:
+        return "Error: Division by zero is mathematically undefined."
+    return str(a / b)
+
+
+@tool
+def calculate_power(base: float, exponent: float) -> float:
+    """Raises a base number to the power of an exponent (base^exponent)."""
+    return math.pow(base, exponent)
+
+
+@tool
+def calculate_square_root(number: float) -> str:
+    """Calculates the square root of a given number. Handles negative real constraints."""
+    if number < 0:
+        return "Error: Cannot calculate the square root of a negative number in real numbers."
+    return str(math.sqrt(number))
+
+
+# Consolidate all tool tools into the master array
+tools = [
+    get_word_length, 
+    calculate_add, 
+    calculate_subtract, 
+    calculate_multiply, 
+    calculate_divide,
+    calculate_power,
+    calculate_square_root
+]
 
 
 # Helper function to load the selected LLM
@@ -96,7 +142,7 @@ if "messages" not in st.session_state:
     st.session_state.messages = [
         {
             "role": "assistant",
-            "content": "Hello! I automatically loaded your API keys from `.streamlit/secrets.toml`. Ask me to run calculations or count text lengths!",
+            "content": "Hello! I automatically loaded your API keys from `.streamlit/secrets.toml`. Ask me to run complex arithmetic calculations or count text lengths!",
         }
     ]
 
@@ -125,7 +171,7 @@ if prompt := st.chat_input("Ask something..."):
                 # 1. Instantiate selected LLM using secret key
                 llm = load_llm(provider, model_name, api_key)
 
-                # 2. Build ReAct agent with tools
+                # 2. Build ReAct agent with full tools array
                 agent_executor = create_react_agent(llm, tools)
 
                 # 3. Format message history for LangChain
