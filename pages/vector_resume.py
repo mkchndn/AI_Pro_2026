@@ -89,7 +89,8 @@ with st.sidebar:
     st.page_link("app.py", label="🌐 DASHBOARD", use_container_width=True)
     st.page_link("pages/chatbot.py", label="🌐 GEMINI CLOUD CHAT", use_container_width=True)
     st.page_link("pages/chatgroq.py", label="🌐 GROQ CLOUD CHAT", use_container_width=True)
-    st.page_link("pages/ollamarag.py", label="🌐 OLAMMA RAG CHAT", use_container_width=True)
+    st.page_link("pages/agent.py", label="🌐 CUSTOM AGENT", use_container_width=True)
+    st.page_link("pages/vector_resume.py", label="🌐 Vector RESUME CHAT", use_container_width=True)
         
     st.markdown("---")
     st.markdown("### 📥 DOWNLOAD CV SUITE")
@@ -124,7 +125,7 @@ with col_s:
 with col_g:
     st.page_link("pages/chatgroq.py", label="🌐 GROQ CLOUD CHAT", use_container_width=True)
 with col_o:
-    st.page_link("pages/ollamarag.py", label="🌐 OLAMMA RAG CHAT", use_container_width=True)
+    st.page_link("pages/agent.py", label="🌐 CUSTOM AGENT", use_container_width=True)
 
 st.markdown("---")
 
